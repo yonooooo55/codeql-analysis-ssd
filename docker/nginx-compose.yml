@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  ccap-app:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile.flask
+    container_name: ccap-flask-app
+    restart: unless-stopped
+    networks:
+      - ccap-network
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+    volumes:
+      - ../logs:/app/logs
+    expose:
+      - "5000"
+    ports:
+      - "5000:5000" 
+
+  nginx:
+    image: nginx:alpine
+    container_name: ccap-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443" 
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/sites-available:/etc/nginx/sites-available:ro
+      - ../nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../nginx/proxy_params:/etc/nginx/proxy_params:ro
+      - /var/www/certbot:/var/www/certbot  # for webroot challenges
+      - /etc/letsencrypt:/etc/letsencrypt:ro  # for SSL certs
+    networks:
+      - ccap-network
+    depends_on:
+      - ccap-app
+      - sonarqube
+  
+  sonarqube:
+    image: sonarqube:latest
+    container_name: ccap-sonarqube
+    restart: unless-stopped
+    networks:
+      - ccap-network
+    depends_on:
+      - sonarqube-db
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonarqube
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    expose:
+      - "9000"
+
+  sonarqube-db:
+    image: postgres:latest
+    container_name: sonarqube_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonarqube
+    volumes:
+      - postgresql:/var/lib/postgresql/data
+    networks:
+      - ccap-network
+
+  splunk:
+    image: splunk/splunk:latest
+    container_name: splunk
+    restart: unless-stopped
+    ports:
+      - "8088:8088"  # Expose HEC port for Flask logs
+      - "8000:8000"  # Web UI port for Splunk
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=${SPLUNK_PASSWORD}
+    volumes:
+      - splunk_data:/opt/splunk/var  # Persist Splunk data
+    networks:
+      - ccap-network
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  postgresql:
+  splunk_data:  # Volume for Splunk data
+
+networks:
+  ccap-network:
+    driver: bridge

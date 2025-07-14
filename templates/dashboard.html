@@ -1,0 +1,121 @@
+{% set page_title = "Co-Curricular Activities Portal" %}
+{% set active_page = "dashboard" %}
+{% set show_welcome_section = true %}
+{% set welcome_title = "Welcome to SIT's Co-Curricular Activities Portal!" %}
+{% set welcome_subtitle = "Your platform for CCA decision-making and participation" %}
+{% set welcome_size = "5" %}
+{% set welcome_subtitle_size = "4" %}
+
+{% include 'header.html' %}
+
+{% if password_days_left is defined and password_days_left is not none and password_days_left <= 30 %}
+<div class="alert alert-warning alert-dismissible fade show mx-3 mt-3" role="alert">
+  ⚠️ Your password will expire in {{ password_days_left }} day{{ 's' if password_days_left != 1 else '' }}.
+  <a href="{{ url_for('student_routes.change_password') }}" class="alert-link">Change it now</a>.
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row">
+            <!-- CCAs Section -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header py-3">
+                        <h5 class="mb-0">Your Co-Curricular Activities</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for cca in ccas %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ cca.name }}</h5>
+                                        <p class="card-text">{{ cca.description }}</p>
+                                    </div>
+                                    <div class="card-footer cca-card-footer">
+                                        {% if cca.role == 'moderator' %}
+                                            <a href="{{ url_for('moderator_routes.moderator_view_cca', cca_id=cca.id) }}" class="btn btn-sm btn-success">
+                                                <i class="bi bi-gear"></i> Manage CCA
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ url_for('student_routes.student_view_cca', cca_id=cca.id) }}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-eye"></i> View Details
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top 3 Expiring Polls Section -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history"></i> Expiring Soon
+                        </h5>
+                        {% if available_polls|length > 3 %}
+                        <span class="badge bg-warning text-dark">{{ available_polls|length }} total</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        {% if available_polls %}
+                        <ul class="list-group list-group-flush">
+                            {% for poll in available_polls[:3] %}
+                            <li class="list-group-item poll-item {% if loop.index == 1 %}border-start border-danger border-3{% elif loop.index == 2 %}border-start border-warning border-3{% else %}border-start border-primary border-3{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-1">{{ poll.title }}</h6>
+                                    {% if loop.index == 1 %}
+                                    <span class="badge bg-danger">Urgent</span>
+                                    {% elif loop.index == 2 %}
+                                    <span class="badge bg-warning text-dark">Soon</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-muted mb-2 small">
+                                    <i class="bi bi-building"></i> {{ poll.cca }}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar-x"></i> Closes: {{ poll.end_date }}
+                                    </small>
+                                    <a href="{{ url_for('student_routes.view_poll_detail', poll_id=poll.id) }}" class="btn btn-sm btn-outline-primary">Vote</a>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        
+                        <!-- View All Polls Link -->
+                        <div class="mt-3 text-center">
+                            {% if available_polls|length > 3 %}                            <a href="{{ url_for('student_routes.view_polls') }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-list-ul"></i> View All {{ available_polls|length }} Polls
+                            </a>
+                            {% elif available_polls|length > 0 %}                            <a href="{{ url_for('student_routes.view_polls') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-list-ul"></i> View All Polls
+                            </a>
+                            {% endif %}
+                        </div>
+                        
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox display-6 text-muted mb-3"></i>
+                            <p class="text-muted mb-3">No active polls at the moment.</p>
+                            {% if user_is_moderator %}                            <a href="{{ url_for('moderator_routes.create_poll') }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle"></i> Create Poll
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% include 'footer.html' %}

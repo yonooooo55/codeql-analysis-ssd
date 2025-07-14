@@ -1,0 +1,208 @@
+{% set page_title = "Multi-Factor Authentication Setup" %}
+{% set active_page = "mfa_setup" %}
+{% set show_welcome_section = true %}
+{% set welcome_title = "Secure Your Account" %}
+{% set welcome_subtitle = "Set up Multi-Factor Authentication for enhanced security" %}
+{% set welcome_size = "5" %}
+{% set welcome_subtitle_size = "4" %}
+
+{% include 'mfa_header.html' %}
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+                <!-- MFA Setup Card -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-shield-lock"></i> Multi-Factor Authentication Setup
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-info-circle"></i>
+                            To protect your account, you must set up Multi-Factor Authentication before accessing the portal.
+                        </div>
+
+                        <div class="row">
+                            <!-- QR Code Section -->
+                            <div class="col-lg-6 mb-4">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-qr-code"></i> Step 1: Scan QR Code
+                                </h6>
+                                <div class="text-center">
+                                    <div class="qr-code-container p-3 border rounded bg-light mb-3">
+                                        <img src="data:image/png;base64,{{ qr_b64 }}" alt="MFA QR Code" class="img-fluid" style="max-width: 250px;">
+                                    </div>
+                                    <p class="small text-muted">
+                                        <i class="bi bi-phone"></i> Scan this QR code with Microsoft Authenticator
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Manual Entry Section -->
+                            <div class="col-lg-6 mb-4">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-key"></i> Manual Entry (Optional)
+                                </h6>
+                                <p class="small text-muted mb-2">Can't scan? Enter this key manually:</p>
+                                <div class="input-group mb-3">
+                                    <input type="text" class="form-control font-monospace" value="{{ secret }}" readonly id="manualKey">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard()">
+                                        <i class="bi bi-clipboard"></i> Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Verification Form -->
+                        <div class="row justify-content-center">
+                            <div class="col-md-6">
+                                <h6 class="mb-3 text-center">
+                                    <i class="bi bi-check-circle"></i> Step 2: Verify Your Setup
+                                </h6>
+                                
+                                <form method="POST" id="mfaSetupForm">
+                                    <div class="mb-3">
+                                        <label for="mfa_code" class="form-label">
+                                            Enter 6-digit code from your app
+                                        </label>
+                                        <input type="text" class="form-control form-control-lg text-center font-monospace" 
+                                               id="mfa_code" name="mfa_code" 
+                                               maxlength="6" minlength="6" 
+                                               pattern="[0-9]{6}" 
+                                               placeholder="000000" 
+                                               required
+                                               autocomplete="off">
+                                        <div class="form-text text-center">
+                                            <i class="bi bi-clock"></i> Code changes every 30 seconds
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-success btn-lg" id="verifyBtn">
+                                            <i class="bi bi-shield-check"></i> Verify & Complete Setup
+                                        </button>
+                                        <a href="{{ url_for('misc_routes.logout') }}" class="btn btn-outline-secondary">
+                                            <i class="bi bi-box-arrow-right"></i> Cancel & Logout
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- MFA Setup JavaScript -->
+    <script>
+        // Copy manual key to clipboard
+        function copyToClipboard() {
+            const manualKey = document.getElementById('manualKey');
+            manualKey.select();
+            document.execCommand('copy');
+            
+            // Show feedback
+            const copyBtn = event.target.closest('button');
+            const originalHTML = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+            copyBtn.classList.add('btn-success');
+            copyBtn.classList.remove('btn-outline-secondary');
+            
+            setTimeout(() => {
+                copyBtn.innerHTML = originalHTML;
+                copyBtn.classList.remove('btn-success');
+                copyBtn.classList.add('btn-outline-secondary');
+            }, 2000);
+        }
+
+        // Format MFA code input
+        document.getElementById('mfa_code').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            if (value.length > 6) {
+                value = value.substring(0, 6);
+            }
+            e.target.value = value;
+            
+            if (value.length === 6) {
+                e.target.classList.add('is-valid');
+            } else {
+                e.target.classList.remove('is-valid');
+            }
+        });
+
+        // Track if user is legitimately leaving via logout or form submission
+        let isLegitimateExit = false;
+
+        // Form submission handling
+        document.getElementById('mfaSetupForm').addEventListener('submit', function(e) {
+            const verifyBtn = document.getElementById('verifyBtn');
+            const mfaCode = document.getElementById('mfa_code').value;
+            
+            if (mfaCode.length !== 6) {
+                e.preventDefault();
+                document.getElementById('mfa_code').classList.add('is-invalid');
+                document.getElementById('mfa_code').focus();
+                return;
+            }
+            
+            // Mark as legitimate exit 
+            isLegitimateExit = true;
+            
+            // Show loading state
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Verifying...';
+        });
+
+        // Prevent paste of non-numeric content
+        document.getElementById('mfa_code').addEventListener('paste', function(e) {
+            e.preventDefault();
+            const paste = (e.clipboardData || window.clipboardData).getData('text');
+            const numericPaste = paste.replace(/\D/g, '').substring(0, 6);
+            this.value = numericPaste;
+            
+            if (numericPaste.length === 6) {
+                this.classList.add('is-valid');
+            }
+        });
+
+        // Setup event listeners on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-focus on MFA code input
+            document.getElementById('mfa_code').focus();
+            
+            // Handle logout button clicks
+            const logoutBtn = document.querySelector('a[href*="logout"]');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    isLegitimateExit = true;  // Mark logout as legitimate
+                });
+            }
+        });
+
+        // Only prevent navigation for non-legitimate exits
+        window.addEventListener('beforeunload', function (e) {
+            if (!isLegitimateExit) {
+                e.preventDefault();
+                e.returnValue = 'You must complete MFA setup before accessing the portal.';
+            }
+        });
+
+        // Disable back button functionality
+        history.pushState(null, null, location.href);
+        window.onpopstate = function () {
+            if (!isLegitimateExit) {
+                history.go(1);
+            }
+        };
+    </script>
+
+{% include 'footer.html' %}

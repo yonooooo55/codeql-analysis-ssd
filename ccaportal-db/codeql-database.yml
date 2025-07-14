@@ -1,0 +1,45 @@
+---
+sourceLocationPrefix: C:\Users\Joshua Choo\Downloads\ICT2216-Group1-CCAPortal-main\ICT2216-Group1-CCAPortal-main
+baselineLinesOfCode: 2455
+unicodeNewlines: false
+columnKind: utf32
+primaryLanguage: python
+inProgress:
+  primaryLanguage: python
+  installedExtractors:
+    actions:
+     - C:/Users/Joshua Choo/Desktop/codeql/actions
+    cpp:
+     - C:/Users/Joshua Choo/Desktop/codeql/cpp
+    csharp:
+     - C:/Users/Joshua Choo/Desktop/codeql/csharp
+    csv:
+     - C:/Users/Joshua Choo/Desktop/codeql/csv
+    go:
+     - C:/Users/Joshua Choo/Desktop/codeql/go
+    html:
+     - C:/Users/Joshua Choo/Desktop/codeql/html
+    java:
+     - C:/Users/Joshua Choo/Desktop/codeql/java
+    javascript:
+     - C:/Users/Joshua Choo/Desktop/codeql/javascript
+    properties:
+     - C:/Users/Joshua Choo/Desktop/codeql/properties
+    python:
+     - C:/Users/Joshua Choo/Desktop/codeql/python
+    ruby:
+     - C:/Users/Joshua Choo/Desktop/codeql/ruby
+    rust:
+     - C:/Users/Joshua Choo/Desktop/codeql/rust
+    swift:
+     - C:/Users/Joshua Choo/Desktop/codeql/swift
+    xml:
+     - C:/Users/Joshua Choo/Desktop/codeql/xml
+    yaml:
+     - C:/Users/Joshua Choo/Desktop/codeql/yaml
+creationMetadata:
+  cliVersion: 2.22.1
+  creationTime: 2025-07-14T12:28:10.219355700Z
+overlayBaseDatabase: false
+overlayDatabase: false
+finalised: false

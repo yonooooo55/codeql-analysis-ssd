@@ -1,0 +1,60 @@
+{% set page_title = "All CCAs" %}
+{% set active_page = "view_all_ccas" %}
+{% set show_welcome_section = true %}
+{% set welcome_title = "All Co-Curricular Activities" %}
+{% set welcome_subtitle = "View and manage all CCAs in the system" %}
+{% set welcome_size = "5" %}
+{% set welcome_subtitle_size = "4" %}
+
+{% include 'header.html' %}
+
+    <!-- Main Content -->
+    <div class="container">
+        {% if ccas %}
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">All CCAs ({{ ccas|length }})</h5>
+                            <a href="{{ url_for('admin_routes.create_cca') }}" class="btn btn-success">
+                                <i class="bi bi-plus-circle"></i> Create New CCA
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for cca in ccas %}                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ cca.Name }}</h5>
+                                            <p class="card-text">{{ cca.Description if cca.Description else 'No description available.' }}</p>
+                                            <div class="mt-3">
+                                                <span class="badge bg-primary me-2">{{ cca.member_count }} members</span>
+                                                <span class="badge bg-success">{{ cca.moderator_count }} moderators</span>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer cca-card-footer">
+                                            <a href="{{ url_for('admin_routes.view_cca', cca_id=cca.CCAId) }}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-gear"></i> Manage CCA
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-4 text-muted"></i>
+                <h4 class="text-muted mt-3">No CCAs Found</h4>
+                <p class="text-muted">Create your first CCA to get started.</p>
+                <a href="{{ url_for('admin_routes.create_cca') }}" class="btn btn-success mt-3">
+                    <i class="bi bi-plus-circle"></i> Create First CCA
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+{% include 'footer.html' %}

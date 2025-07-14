@@ -1,0 +1,76 @@
+{% set page_title = "All Polls" %}
+{% set active_page = "view_all_polls" %}
+{% set show_welcome_section = true %}
+{% set welcome_title = "All Polls" %}
+{% set welcome_subtitle = "View all polls across all CCAs in the system" %}
+{% set welcome_size = "5" %}
+{% set welcome_subtitle_size = "4" %}
+
+{% include 'header.html' %}
+
+    <!-- Polls List -->
+    <div class="container mt-4 main-content">
+        {% if polls %}
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">All Polls ({{ polls|length }})</h4>
+                <div>
+                    <span class="text-muted me-3">Administrator View</span>
+                </div>
+            </div>
+            
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for poll in polls %}
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">{{ poll.Question }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                <strong>Status:</strong>
+                                <span class="badge bg-{{ 'success' if poll.LiveIsActive else 'secondary' }}">
+                                    {{ 'Active' if poll.LiveIsActive else 'Closed' }}
+                                </span>
+                                {% if poll.IsAnonymous %}
+                                <span class="badge bg-warning text-dark ms-1">Anonymous</span>
+                                {% endif %}
+                            </p>
+                            <p class="card-text"><small class="text-muted">CCA: {{ poll.CCAName }}</small></p>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    Ends on: {{ poll.EndDate }}
+                                </small>
+                            </p>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    Type: {{ poll.QuestionType.replace('_', ' ').title() }}
+                                </small>
+                            </p>
+                            <div class="mt-2">
+                                <span class="badge bg-info">{{ poll.VoteCount }} votes</span>
+                            </div>
+                        </div>
+                        <div class="card-footer text-center">
+                            <a href="{{ url_for('student_routes.view_poll_detail', poll_id=poll.PollId) }}" 
+                               class="btn btn-sm btn-primary me-1">
+                                <i class="bi bi-eye"></i> View Details
+                            </a>
+                            <a href="{{ url_for('student_routes.view_poll_results', poll_id=poll.PollId) }}" 
+                               class="btn btn-sm btn-success">
+                                <i class="bi bi-bar-chart"></i> Results
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-4 text-muted"></i>
+                <p class="lead mt-3">No polls have been created yet.</p>
+                <p class="text-muted">Polls will appear here once moderators create them.</p>
+            </div>
+        {% endif %}
+    </div>
+
+{% include 'footer.html' %}

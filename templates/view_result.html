@@ -1,0 +1,202 @@
+{% set page_title = "Poll Results - " ~ poll.Question if poll else 'Poll Results' %}
+{% set active_page = "polls" %}
+{% set show_welcome_section = true %}
+{% set welcome_title = "Poll Results" %}
+{% set welcome_subtitle = poll.Question if poll else "Poll not found" %}
+{% set welcome_size = "5" %}
+{% set welcome_subtitle_size = "4" %}
+{% set back_url = url_for('student_routes.view_polls') %}
+{% set back_text = "Back to Polls" %}
+
+{% include 'header.html' %}
+
+<div class="container mt-4">
+    {% if poll %}
+        <!-- Poll Information Card -->
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-bar-chart-fill"></i> Poll Results
+                            </h5>
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-stopwatch"></i> Closed
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong><i class="bi bi-building"></i> CCA:</strong> {{ poll.CCAName }}</p>
+                                <p><strong><i class="bi bi-calendar3"></i> Started:</strong> {{ poll.StartDate }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong><i class="bi bi-list-ul"></i> Type:</strong> {{ poll.QuestionType|replace('_', ' ')|title }}</p>
+                                <p><strong><i class="bi bi-calendar-x"></i> Ended:</strong> {{ poll.EndDate }}</p>
+                            </div>
+                        </div>
+                        
+                        {% if not poll.IsAnonymous and user_voted %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-check-circle-fill"></i> You participated in this poll.
+                            {% if user_votes %}
+                                Your vote(s): 
+                                {% for vote_id in user_votes %}
+                                    {% for option in options %}
+                                        {% if option.OptionId == vote_id %}
+                                            <strong>{{ option.OptionText }}</strong>{% if not loop.last %}, {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        {% elif poll.IsAnonymous %}
+                        <div class="alert alert-secondary">
+                            <i class="bi bi-eye-slash"></i> This was an anonymous poll. Individual votes are not tracked.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Results Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-graph-up"></i> Voting Results
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if options and total_votes > 0 %}
+                            {% for option in options %}
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0">{{ option.OptionText }}</h6>
+                                    <div class="text-end">
+                                        <span class="badge bg-primary">{{ option.VoteCount }} vote{{ 's' if option.VoteCount != 1 else '' }}</span>
+                                        <span class="text-muted">{{ option.Percentage }}%</span>
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar {% if loop.index == 1 %}bg-success{% elif loop.index == 2 %}bg-info{% elif loop.index == 3 %}bg-warning{% else %}bg-secondary{% endif %}" 
+                                         role="progressbar" 
+                                         data-width="{{ option.Percentage }}"
+                                         aria-valuenow="{{ option.Percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {% if option.Percentage >= 10 %}{{ option.Percentage }}%{% endif %}
+                                    </div>
+                                </div>
+                                {% if not poll.IsAnonymous and user_votes and option.OptionId in user_votes %}
+                                <small class="text-success">
+                                    <i class="bi bi-check-circle"></i> You voted for this option
+                                </small>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-graph-down display-4 text-muted"></i>
+                                <p class="mt-3 text-muted">No votes were cast in this poll.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Sidebar -->
+            <div class="col-lg-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-pie-chart"></i> Poll Statistics
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border-end">
+                                    <h4 class="text-primary mb-0">{{ total_votes }}</h4>
+                                    <small class="text-muted">Total Votes</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <h4 class="text-success mb-0">{{ participation_rate }}%</h4>
+                                <small class="text-muted">Participation</small>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border-end">
+                                    <h5 class="text-info mb-0">{{ total_eligible_voters }}</h5>
+                                    <small class="text-muted">Eligible Voters</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <h5 class="text-warning mb-0">{{ options|length }}</h5>
+                                <small class="text-muted">Options</small>
+                            </div>
+                        </div>
+
+                        {% if total_votes > 0 %}
+                        <hr>
+                        <h6><i class="bi bi-trophy"></i> Winner</h6>
+                        {% set winner = options[0] %}
+                        <div class="alert alert-success py-2">
+                            <strong>{{ winner.OptionText }}</strong><br>
+                            <small>{{ winner.VoteCount }} votes ({{ winner.Percentage }}%)</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-lightning"></i> Quick Actions
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <a href="{{ url_for('student_routes.view_poll_detail', poll_id=poll.PollId) }}" 
+                           class="btn btn-outline-primary btn-sm w-100 mb-2">
+                            <i class="bi bi-eye"></i> View Poll Details
+                        </a>
+                        {% if user_is_moderator %}
+                        <a href="{{ url_for('moderator_routes.create_poll') }}" 
+                           class="btn btn-success btn-sm w-100 mb-2">
+                            <i class="bi bi-plus-circle"></i> Create New Poll
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('student_routes.view_polls') }}" 
+                           class="btn btn-outline-secondary btn-sm w-100">
+                            <i class="bi bi-list-ul"></i> All Polls
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-exclamation-triangle display-1 text-warning"></i>
+            <h3 class="mt-3">Poll Not Found</h3>
+            <p class="text-muted">The poll you are looking for could not be found or is no longer available.</p>
+            <a href="{{ url_for('student_routes.view_polls') }}" class="btn btn-primary">
+                <i class="bi bi-arrow-left"></i> Back to Polls
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Set progress bar widths after page loads to avoid CSS validation issues
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBars = document.querySelectorAll('.progress-bar[data-width]');
+    progressBars.forEach(function(bar) {
+        const width = bar.getAttribute('data-width');
+        bar.style.width = width + '%';
+    });
+});
+</script>

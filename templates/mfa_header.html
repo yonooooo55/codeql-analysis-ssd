@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCAP - {{ page_title or 'Co-Curricular Activities Portal' }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation for MFA Pages -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <span class="navbar-brand">
+                <img src="{{ url_for('static', filename='images/sitlogo.png') }}" alt="SIT" class="sit-logo">
+                SIT CCA Portal
+            </span>
+            
+            <!-- No navigation links during MFA setup and verification -->
+            <div class="d-flex">
+                <span class="text-light small">
+                    <i class="bi bi-shield-lock"></i> Security Setup Required
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    {% if show_welcome_section %}
+    <!-- Welcome Section -->
+    <div class="welcome-section">
+        <div class="container">
+            <h1 class="display-{{ welcome_size or '5' }} fw-bold">{{ welcome_title or page_title }}</h1>
+            {% if welcome_subtitle %}
+            <p class="fs-{{ welcome_subtitle_size or '4' }}">{{ welcome_subtitle }}</p>
+            {% endif %}
+            {% if welcome_badge %}
+            <span class="badge bg-{{ welcome_badge_color or 'success' }} fs-6">{{ welcome_badge }}</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Flash Messages -->
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'warning' if category == 'warning' else 'success' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+</body>
+</html>

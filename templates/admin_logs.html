@@ -1,0 +1,266 @@
+{% set page_title = "System Logs" %}
+{% set active_page = "logs" %}
+{% set show_welcome_section = true %}
+{% set welcome_title = "System Logs" %}
+{% set welcome_subtitle = "Security and audit logs" %}
+{% set welcome_size = "5" %}
+{% set welcome_subtitle_size = "4" %}
+
+{% include 'header.html' %}
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Log Filters</h5>
+                        <a href="#" class="btn btn-sm btn-success">
+                            <i class="bi bi-download"></i> Export CSV
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <form method="GET" action="#">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label for="log_type" class="form-label">Log Type</label>
+                                    <select class="form-select" name="log_type" id="log_type">
+                                        <option value="all">All Types</option>
+                                        <option value="authentication">Authentication</option>
+                                        <option value="authorization">Authorization</option>
+                                        <option value="session">Session Events</option>
+                                        <option value="data_modification">Data Changes</option>
+                                        <option value="security_violation">Security Violations</option>
+                                        <option value="system">System Events</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="date_from" class="form-label">From Date</label>
+                                    <input type="date" class="form-control" name="date_from" id="date_from">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="date_to" class="form-label">To Date</label>
+                                    <input type="date" class="form-control" name="date_to" id="date_to">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="search" class="form-label">Search</label>
+                                    <input type="text" class="form-control" name="search" id="search" 
+                                           placeholder="User, IP, or message...">
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-funnel"></i> Apply Filters
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary ms-2">
+                                        <i class="bi bi-arrow-clockwise"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Statistics -->
+        here
+        <!-- Log Statistics -->
+        <div class="row mb-4">
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h4 class="text-primary">{{ total_logs }}</h4>
+                        <small class="text-muted">Total Logs</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="text-info">{{ authentication_logs }}</h6>
+                        <small class="text-muted">Authentication</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="text-warning">{{ authorization_logs }}</h6>
+                        <small class="text-muted">Authorization</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="text-success">{{ data_changes_logs }}</h6>
+                        <small class="text-muted">Data Changes</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="text-danger">{{ security_issues_logs }}</h6>
+                        <small class="text-muted">Security Issues</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="text-secondary">{{ system_events_logs }}</h6>
+                        <small class="text-muted">System Events</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recent System Logs</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Type</th>
+                                        <th>User</th>
+                                        <th>IP Address</th>
+                                        <th>Event</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% if logs %}
+                                    {% for log_type, log, user in logs %}
+                                    <tr>
+                                        <td>{{ log.Timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                        <td>
+                                            {% if log_type == 'auth' %}
+                                                <span class="badge {% if log.Success %}bg-success{% else %}bg-danger{% endif %}">Authentication</span>
+                                            {% else %}
+                                                <span class="badge bg-info">Admin Action</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ user.Username if user else log.Username or 'Unknown' }}</td>
+                                        <td>{{ log.IPAddress or 'N/A' }}</td>
+                                        <td>
+                                            {% if log_type == 'auth' %}
+                                                {% if log.Success %}
+                                                    Login success
+                                                {% else %}
+                                                    Failed: {{ log.Reason }}
+                                                {% endif %}
+                                            {% else %}
+                                                {{ log.Action }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                                                    data-bs-target="#logDetailModal"
+                                                    data-timestamp="{{ log.Timestamp }}"
+                                                    data-log-type="{% if log_type == 'auth' %}Authentication{% else %}Admin Action{% endif %}"
+                                                    data-user="{{ user.Username if user else log.Username or 'Unknown' }}"
+                                                    data-ip="{{ log.IPAddress }}"
+                                                    data-message="{% if log_type == 'auth' %}{{ log.Reason or 'Login success' }}{% else %}{{ log.Action }}{% endif %}"
+                                                    data-agent="{{ request.headers.get('User-Agent', '-') }}">
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            No system logs available.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                </tbody>
+
+                            </table>
+                        </div>
+
+                        <!-- Pagination, none when there are no logs -->
+                        <nav aria-label="Logs pagination" class="mt-3" style="display: none;">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item disabled">
+                                    <span class="page-link">Previous</span>
+                                </li>
+                                <li class="page-item active">
+                                    <span class="page-link">1</span>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Detail Modal -->
+    <div class="modal fade" id="logDetailModal" tabindex="-1" aria-labelledby="logDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="logDetailModalLabel">Log Entry Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Timestamp:</strong><br>
+                            <span class="text-muted" id="modal-timestamp">-</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Log Type:</strong><br>
+                            <span class="badge bg-secondary" id="modal-log-type">-</span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>User:</strong><br>
+                            <span class="text-muted" id="modal-user">-</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>IP Address:</strong><br>
+                            <span class="font-monospace text-muted" id="modal-ip">-</span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <strong>Event Message:</strong><br>
+                            <span class="text-muted" id="modal-message">-</span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <strong>User Agent:</strong><br>
+                            <span class="text-muted small" id="modal-user-agent">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% include 'footer.html' %}

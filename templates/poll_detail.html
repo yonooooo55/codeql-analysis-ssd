@@ -1,0 +1,97 @@
+{% set page_title = poll.Question if poll else 'Poll Details' %}
+{% set active_page = "polls" %}
+{% set show_welcome_section = true %}
+{% set welcome_title = poll.Question if poll else 'Poll Not Found' %}
+{% set welcome_subtitle = "CCA: " ~ poll.CCAName if poll else "" %}
+{% set welcome_size = "5" %}
+{% set welcome_subtitle_size = "4" %}
+{% set back_url = url_for('student_routes.view_polls') %}
+{% set back_text = "Back to All Polls" %}
+
+{% include 'header.html' %}
+
+    <!-- Poll Details -->
+    <div class="container mt-4 main-content">
+        {% if poll %}
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Poll Details</h5>
+                        <span class="badge bg-{{ 'success' if poll.LiveIsActive else 'secondary' }}">
+                            {{ 'Active' if poll.LiveIsActive else 'Closed' }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p><strong>Question Type:</strong> {{ poll.QuestionType }}</p>
+                    <p><strong>Ends on:</strong> {{ poll.EndDate if poll.EndDate else 'N/A' }}</p>
+                    <p><strong>Anonymous Voting:</strong> {{ 'Yes' if poll.IsAnonymous else 'No' }}</p>
+                    {% if poll.Description %}
+                        <p><strong>Description:</strong> {{ poll.Description }}</p>
+                    {% endif %}
+
+                    <hr>
+                    <h5 class="mt-4">Options & Voting</h5>
+                    {% if options %}
+                        <form method="POST" action="{{ url_for('student_routes.submit_vote', poll_id=poll.PollId) }}">
+                            <ul class="list-group">
+                                {% for option in options %}
+                                <li class="list-group-item option-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        {% if poll.QuestionType == 'single_choice' %}
+                                        <input type="radio" name="option_id" value="{{ option.OptionId }}" id="option_{{ option.OptionId }}" class="form-check-input me-2">
+                                        {% elif poll.QuestionType == 'multiple_choice' %}
+                                        <input type="checkbox" name="option_ids[]" value="{{ option.OptionId }}" id="option_{{ option.OptionId }}" class="form-check-input me-2">
+                                        {% endif %}
+                                        <label for="option_{{ option.OptionId }}">{{ option.OptionText }}</label>
+                                        {% if option.ImageUrl %}
+                                            <img src="{{ option.ImageUrl }}" alt="{{ option.OptionText }}" class="img-thumbnail mt-2" style="max-height: 100px;">
+                                        {% endif %}
+                                    </div>
+                                    <span class="vote-count ms-3">({{ option.VoteCount | default(0) }} votes)</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% if poll.IsAnonymous and poll.LiveIsActive and vote_token %}
+                            <input type="hidden" name="vote_token" value="{{ vote_token }}">
+                            {% endif %}
+                            
+                    {% if poll.LiveIsActive %}
+                        {% if has_voted %}
+                            <p class="mt-3 text-success"><i class="bi bi-check-circle-fill"></i> You have already voted in this poll.</p>
+                        {% else %}
+                            <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-check-lg"></i> Submit Vote</button>
+                        {% endif %}
+                    {% else %}
+                        <p class="mt-3 text-muted"><i class="bi bi-x-circle"></i> Voting is closed for this poll.</p>
+                    {% endif %}
+                </form>
+            {% else %}
+                <p class="text-muted">No options available for this poll.</p>
+            {% endif %}
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-warning">
+        <h4>Poll Not Found</h4>
+        <p>The requested poll could not be found or you don't have permission to view it.</p>
+    </div>
+{% endif %}
+
+</div>
+
+<style>
+    .option-item { 
+        background-color: #f8f9fa; 
+        border-left: 3px solid #0d6efd; 
+    }
+    .option-item:hover { 
+        background-color: #e9ecef; 
+    }
+    .vote-count { 
+        font-size: 0.9em; 
+        color: #6c757d; 
+    }
+</style>
+
+{% include 'footer.html' %}

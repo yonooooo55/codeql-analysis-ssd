@@ -1,0 +1,4 @@
+database create
+--language=python
+--command=python -c "import app"
+ccaportal-db

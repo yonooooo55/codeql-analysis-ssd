@@ -1,0 +1,152 @@
+{% set page_title = "Admin Dashboard" %}
+{% set active_page = "dashboard" %}
+{% set show_welcome_section = true %}
+{% set welcome_title = "Admin Dashboard" %}
+{% set welcome_subtitle = "Manage students and CCAs" %}
+{% set welcome_size = "5" %}
+{% set welcome_subtitle_size = "4" %}
+
+{% include 'header.html' %}
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-2">                                <a href="{{ url_for('admin_routes.create_student') }}" class="btn btn-primary w-100">
+                                    <i class="bi bi-person-plus"></i> Create Student Account
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-2">                                <a href="{{ url_for('admin_routes.create_cca') }}" class="btn btn-success w-100">
+                                    <i class="bi bi-plus-circle"></i> Create New CCA
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- CCAs Management -->
+            <div class="col-lg-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Manage CCAs</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if ccas %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Description</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for cca in ccas %}
+                                        <tr>
+                                            <td><a href="{{ url_for('admin_routes.view_cca', cca_id=cca.CCAId) }}">{{ cca.Name }}</a></td>
+                                            <td>{{ cca.Description }}</td>
+                                            <td>
+                                                <a href="{{ url_for('admin_routes.view_cca', cca_id=cca.CCAId) }}" class="btn btn-sm btn-info">View</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No CCAs created yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Overview -->
+            <div class="col-lg-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Registered Students</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if students %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Student ID</th>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for student in students %}
+                                        <tr>
+                                            <td>{{ student.StudentId }}</td>
+                                            <td>{{ student.Name }}</td>
+                                            <td>{{ student.Email }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No students registered yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="container mt-4">
+                <h3>Students Requiring Password Setup</h3>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students_needing_password_setup %}
+                            <tr>
+                                <td>{{ student.StudentId }}</td>
+                                <td>{{ student.Name }}</td>
+                                <td>{{ student.Email if student.Email else 'No email on file' }}</td>
+                                <td>
+                                    {% if student.Email %}
+                                    <form method="POST" action="{{ url_for('admin_routes.resend_password_setup_email', student_id=student.StudentId) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-warning" 
+                                                onclick="return confirm('Resend password setup email to {{ student.Name }}?')">
+                                            <i class="fas fa-envelope"></i> Resend Setup Email
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <span class="text-muted">No email available</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">All students have set their passwords</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% include 'footer.html' %}

@@ -1,0 +1,342 @@
+{% set page_title = cca.Name ~ " (Moderator)" %}
+{% set active_page = "my_ccas" %}
+{% set show_welcome_section = true %}
+{% set welcome_title = cca.Name %}
+{% set welcome_subtitle = "CCA Management - Moderator View" %}
+{% set welcome_size = "5" %}
+{% set welcome_subtitle_size = "4" %}
+{% set back_url = url_for('student_routes.my_ccas') %}
+{% set back_text = "Back to My CCAs" %}
+
+{% include 'header.html' %}
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row">
+            <!-- CCA Details and Members -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">CCA Details</h5>
+                        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editCCAModal">
+                            <i class="bi bi-pencil"></i> Edit CCA
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Name:</strong> {{ cca.Name }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Description:</strong>
+                            <p class="mt-1">{{ cca.Description if cca.Description else 'No description provided.' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CCA Members -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">CCA Members ({{ members|length }})</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if members %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Student ID</th>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>                                        {% for member in members %}
+                                        <tr>
+                                            <td>{{ member.StudentId }}</td>
+                                            <td>{{ member.Name }}</td>
+                                            <td>{{ member.Email }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if member.CCARole == 'moderator' else 'primary' }}">
+                                                    {{ member.CCARole.title() }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if member.CCARole == 'member' %}
+                                                <form method="POST" action="{{ url_for('moderator_routes.moderator_remove_student_from_cca', cca_id=cca.CCAId, member_id=member.MemberId) }}" style="display: inline;" onsubmit="return confirm('Remove {{ member.Name }} from this CCA?')">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                                </form>
+                                                {% else %}
+                                                <span class="text-muted small">Moderator</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No members assigned to this CCA yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Add Student Section -->
+            <div class="col-lg-4">
+                <!-- Add Students Card -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Add Students to CCA</h6>
+                        <button class="btn btn-sm btn-outline-primary" id="bulk-toggle-btn" onclick="toggleBulkMode()">
+                            <span id="bulk-toggle-text">Bulk Add</span>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <!-- Single Add Mode (default) -->
+                        <div id="single-add-mode">
+                            {% if available_students %}
+                            <form method="POST" action="{{ url_for('moderator_routes.moderator_add_student_to_cca', cca_id=cca.CCAId) }}">
+                                <div class="mb-3">
+                                    <label for="student_id" class="form-label">Select Student</label>
+                                    <select class="form-select form-select-sm" id="student_id" name="student_id" required>
+                                        <option value="">Choose student...</option>                                        {% for student in available_students %}
+                                        <option value="{{ student.StudentId }}">{{ student.StudentId }} - {{ student.Name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <input type="hidden" name="role" value="member">
+                                <button type="submit" class="btn btn-sm btn-success w-100">Add as Member</button>
+                            </form>
+                            <p class="small text-muted mt-2">Note: As a moderator, you can only assign the "member" role. Contact an administrator to assign moderator roles.</p>
+                            {% else %}
+                            <p class="text-muted small">All students with login accounts are already assigned to this CCA.</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Bulk Add Mode (hidden by default) -->
+                        <div id="bulk-add-mode" style="display: none;">
+                            <div class="mb-3">
+                                <label for="student-search" class="form-label">Search Students</label>
+                                <div style="position: relative;">
+                                    <input type="text" 
+                                           class="form-control form-control-sm" 
+                                           id="student-search" 
+                                           placeholder="Search by name or student ID..."
+                                           autocomplete="off">
+                                    <div id="search-results" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; max-height: 200px; overflow-y: auto; z-index: 1000; display: none;"></div>
+                                </div>
+                            </div>
+
+                            <div id="selected-students" style="display: none; margin-top: 15px;">
+                                <label class="form-label">Selected Students:</label>
+                                <div id="selected-tags"></div>
+                            </div>
+
+                            <form method="POST" action="{{ url_for('moderator_routes.moderator_add_multiple_students_to_cca', cca_id=cca.CCAId) }}" id="bulk-add-form">
+                                <div id="selected-student-inputs"></div>
+                                <button type="submit" class="btn btn-sm btn-success w-100" id="bulk-submit-btn" disabled>
+                                    Add Selected Students as Members
+                                </button>
+                            </form>
+                            <p class="small text-muted mt-2">Note: All selected students will be added as members.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <a href="{{ url_for('moderator_routes.create_poll') }}" class="btn btn-primary btn-sm w-100 mb-2">
+                            <i class="bi bi-plus-circle"></i> Create New Poll
+                        </a>
+                        <a href="{{ url_for('student_routes.dashboard') }}" class="btn btn-outline-secondary btn-sm w-100">
+                            <i class="bi bi-bar-chart"></i> View Polls & Results
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit CCA Modal -->
+    <div class="modal fade" id="editCCAModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit CCA</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('moderator_routes.moderator_edit_cca', cca_id=cca.CCAId) }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="edit_name" class="form-label">CCA Name</label>
+                            <input type="text" class="form-control" id="edit_name" name="name" 
+                                   value="{{ cca.Name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_description" class="form-label">Description</label>
+                            <textarea class="form-control" id="edit_description" name="description" rows="4">{{ cca.Description if cca.Description else '' }}</textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const ccaId = parseInt('{{ cca.CCAId }}');
+        
+        let selectedStudents = new Map();
+        let searchTimeout;
+        let isBulkMode = false;
+
+        function toggleBulkMode() {
+            isBulkMode = !isBulkMode;
+            const singleMode = document.getElementById('single-add-mode');
+            const bulkMode = document.getElementById('bulk-add-mode');
+            const toggleText = document.getElementById('bulk-toggle-text');
+
+            if (isBulkMode) {
+                singleMode.style.display = 'none';
+                bulkMode.style.display = 'block';
+                toggleText.textContent = 'Single Add';
+            } else {
+                singleMode.style.display = 'block';
+                bulkMode.style.display = 'none';
+                toggleText.textContent = 'Bulk Add';
+                clearSearch();
+            }
+        }
+
+        function searchStudents(query) {
+            if (query.length < 2) {
+                hideSearchResults();
+                return;
+            }
+
+            const searchUrl = '{{ url_for("moderator_routes.moderator_search_students") }}';
+            fetch(`${searchUrl}?q=${encodeURIComponent(query)}&cca_id=${ccaId}`)
+                .then(response => response.json())
+                .then(data => {
+                    showSearchResults(data.students || []);
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    hideSearchResults();
+                });
+        }
+
+        function showSearchResults(students) {
+            const resultsDiv = document.getElementById('search-results');
+            resultsDiv.innerHTML = '';
+
+            if (students.length === 0) {
+                resultsDiv.innerHTML = '<div style="padding: 8px 12px; color: #6c757d;">No students found</div>';
+            } else {
+                students.forEach(student => {
+                    if (!selectedStudents.has(student.student_id)) {
+                        const div = document.createElement('div');
+                        div.style.cssText = 'padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;';
+                        div.innerHTML = `<strong>${student.student_id}</strong> - ${student.name}`;
+                        div.onmouseover = () => div.style.backgroundColor = '#f8f9fa';
+                        div.onmouseout = () => div.style.backgroundColor = '';
+                        div.onclick = () => selectStudent(student);
+                        resultsDiv.appendChild(div);
+                    }
+                });
+            }
+
+            resultsDiv.style.display = 'block';
+        }
+
+        function hideSearchResults() {
+            document.getElementById('search-results').style.display = 'none';
+        }
+
+        function selectStudent(student) {
+            selectedStudents.set(student.student_id, student);
+            updateSelectedStudentsDisplay();
+            hideSearchResults();
+            document.getElementById('student-search').value = '';
+        }
+
+        function removeStudent(studentId) {
+            selectedStudents.delete(studentId);
+            updateSelectedStudentsDisplay();
+        }
+
+        function updateSelectedStudentsDisplay() {
+            const container = document.getElementById('selected-students');
+            const tagsDiv = document.getElementById('selected-tags');
+            const inputsDiv = document.getElementById('selected-student-inputs');
+            const submitBtn = document.getElementById('bulk-submit-btn');
+
+            if (selectedStudents.size === 0) {
+                container.style.display = 'none';
+                submitBtn.disabled = true;
+                inputsDiv.innerHTML = '';
+                return;
+            }
+
+            container.style.display = 'block';
+            submitBtn.disabled = false;
+
+            // Update tags
+            tagsDiv.innerHTML = '';
+            inputsDiv.innerHTML = '';
+
+            selectedStudents.forEach((student, studentId) => {
+                // Create tag
+                const tag = document.createElement('span');
+                tag.style.cssText = 'display: inline-block; background-color: #e3f2fd; border: 1px solid #90caf9; padding: 5px 10px; margin: 2px; border-radius: 15px; font-size: 0.875rem;';
+                tag.innerHTML = `${studentId} - ${student.name} <span style="margin-left: 5px; cursor: pointer; color: #f44336; font-weight: bold;" onclick="removeStudent('${studentId}')">&times;</span>`;
+                tagsDiv.appendChild(tag);
+
+                // Create hidden input
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'student_ids[]';
+                input.value = studentId;
+                inputsDiv.appendChild(input);
+            });
+        }
+
+        function clearSearch() {
+            selectedStudents.clear();
+            updateSelectedStudentsDisplay();
+            hideSearchResults();
+            document.getElementById('student-search').value = '';
+        }
+
+        // Set up search input event listener
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('student-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        searchStudents(e.target.value);
+                    }, 300);
+                });
+
+                // Hide search results when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!e.target.closest('#student-search') && !e.target.closest('#search-results')) {
+                        hideSearchResults();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

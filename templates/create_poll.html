@@ -1,0 +1,234 @@
+{% set page_title = "Create Poll" %}
+{% set active_page = "create_poll" %}
+{% set show_welcome_section = true %}
+{% set welcome_title = "Create New Poll" %}
+{% set welcome_subtitle = "Create a poll for your CCA members" %}
+{% set welcome_size = "5" %}
+{% set welcome_subtitle_size = "4" %}
+
+{% include 'header.html' %}
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Poll Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" id="createPollForm">
+                            <!-- CCA Selection -->
+                            <div class="mb-3">
+                                <label for="cca_id" class="form-label">Select CCA</label>
+                                <select class="form-select" id="cca_id" name="cca_id" required>
+                                    <option value="">Choose CCA...</option>
+                                    {% for cca in user_ccas %}
+                                    <option value="{{ cca.id }}">{{ cca.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">You can only create polls for CCAs where you are a moderator.</div>
+                            </div>
+
+                            <!-- Poll Question -->
+                            <div class="mb-3">
+                                <label for="question" class="form-label">Poll Question</label>
+                                <input type="text" class="form-control" id="question" name="question" 
+                                       placeholder="Enter your poll question" required maxlength="255">
+                                <div class="form-text">Keep it clear and concise (max 255 characters).</div>
+                            </div>
+
+                            <!-- Question Type -->
+                            <div class="mb-3">
+                                <label for="question_type" class="form-label">Question Type</label>
+                                <select class="form-select" id="question_type" name="question_type" required>
+                                    <option value="">Choose type...</option>
+                                    <option value="multiple_choice">Multiple Choice</option>
+                                    <option value="single_choice">Single Choice</option>
+                                </select>
+                                <div class="form-text">Single choice allows only one selection, multiple choice allows several.</div>
+                            </div>
+
+                            <!-- Poll Options -->
+                            <div class="mb-3">
+                                <label class="form-label">Poll Options</label>
+                                <div id="optionsContainer">
+                                    <div class="input-group mb-2 option-input">
+                                        <input type="text" class="form-control" name="options[]" placeholder="Option 1" required maxlength="100">
+                                        <button type="button" class="btn btn-outline-danger remove-option" disabled>Remove</button>
+                                    </div>
+                                    <div class="input-group mb-2 option-input">
+                                        <input type="text" class="form-control" name="options[]" placeholder="Option 2" required maxlength="100">
+                                        <button type="button" class="btn btn-outline-danger remove-option" disabled>Remove</button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="addOption">
+                                    <i class="bi bi-plus"></i> Add Option
+                                </button>
+                                <div class="form-text">Add at least 2 options. Maximum 10 options allowed.</div>
+                            </div>
+
+                            <!-- Date and Time Settings -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="start_date" class="form-label">Start Date & Time</label>
+                                        <input type="datetime-local" class="form-control" id="start_date" name="start_date" required>
+                                        <div class="form-text">When the poll becomes available for voting (GMT+8 time).</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="end_date" class="form-label">End Date & Time</label>
+                                        <input type="datetime-local" class="form-control" id="end_date" name="end_date" required>
+                                        <div class="form-text">When voting closes (GMT+8 time).</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Poll Settings -->
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_anonymous" name="is_anonymous" value="1">
+                                    <label class="form-check-label" for="is_anonymous">
+                                        Anonymous Voting
+                                    </label>
+                                    <div class="form-text">When enabled, individual votes cannot be traced back to specific members.</div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Buttons -->
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('student_routes.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                                <button type="submit" class="btn btn-success" id="submitBtn">Create Poll</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Form Validation and Dynamic Options -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('createPollForm');
+            const optionsContainer = document.getElementById('optionsContainer');
+            const addOptionBtn = document.getElementById('addOption');
+            const startDateInput = document.getElementById('start_date');
+            const endDateInput = document.getElementById('end_date');
+            
+            let optionCount = 2;
+            const maxOptions = 10;
+
+            // Set minimum date to current time
+            const now = new Date();
+            const minDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            startDateInput.min = minDateTime;
+            endDateInput.min = minDateTime;
+
+            // Add option functionality
+            addOptionBtn.addEventListener('click', function() {
+                if (optionCount < maxOptions) {
+                    optionCount++;
+                    const newOption = document.createElement('div');
+                    newOption.className = 'input-group mb-2 option-input';
+                    newOption.innerHTML = `
+                        <input type="text" class="form-control" name="options[]" placeholder="Option ${optionCount}" required maxlength="100">
+                        <button type="button" class="btn btn-outline-danger remove-option">Remove</button>
+                    `;
+                    optionsContainer.appendChild(newOption);
+                    
+                    if (optionCount >= maxOptions) {
+                        addOptionBtn.disabled = true;
+                    }
+                    
+                    updateRemoveButtons();
+                }
+            });
+
+            // Remove option functionality
+            optionsContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-option')) {
+                    e.target.parentElement.remove();
+                    optionCount--;
+                    addOptionBtn.disabled = false;
+                    updateRemoveButtons();
+                    updateOptionPlaceholders();
+                }
+            });
+
+            // Update remove button states
+            function updateRemoveButtons() {
+                const removeButtons = document.querySelectorAll('.remove-option');
+                removeButtons.forEach(btn => {
+                    btn.disabled = optionCount <= 2;
+                });
+            }
+
+            // Update option placeholders
+            function updateOptionPlaceholders() {
+                const optionInputs = document.querySelectorAll('input[name="options[]"]');
+                optionInputs.forEach((input, index) => {
+                    input.placeholder = `Option ${index + 1}`;
+                });
+            }
+
+            // Date validation
+            startDateInput.addEventListener('change', function() {
+                const startDate = new Date(this.value);
+                const endDate = new Date(endDateInput.value);
+                
+                if (endDateInput.value && startDate >= endDate) {
+                    endDateInput.value = '';
+                }
+                
+                endDateInput.min = this.value;
+            });
+
+            endDateInput.addEventListener('change', function() {
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(this.value);
+                
+                if (startDate >= endDate) {
+                    this.setCustomValidity('End date must be after start date');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+
+            // Form submission validation
+            form.addEventListener('submit', function(e) {
+                const options = document.querySelectorAll('input[name="options[]"]');
+                const filledOptions = Array.from(options).filter(input => input.value.trim() !== '');
+                
+                if (filledOptions.length < 2) {
+                    e.preventDefault();
+                    alert('Please provide at least 2 options for the poll.');
+                    return;
+                }
+
+                // Check for duplicate options
+                const optionValues = filledOptions.map(input => input.value.trim().toLowerCase());
+                const uniqueOptions = [...new Set(optionValues)];
+                
+                if (optionValues.length !== uniqueOptions.length) {
+                    e.preventDefault();
+                    alert('Please ensure all options are unique.');
+                    return;
+                }
+
+                // Validate dates
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(endDateInput.value);
+                
+                if (startDate >= endDate) {
+                    e.preventDefault();
+                    alert('End date must be after start date.');
+                    return;
+                }
+            });
+
+
+        });
+    </script>
+{% include 'footer.html' %}
